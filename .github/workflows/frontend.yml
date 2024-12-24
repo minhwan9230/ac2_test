@@ -3,44 +3,39 @@ name: Frontend build and deploy
 on:
   push:
     branches:
-      - frontend # frontend 브랜치에 푸시될 때 실행
+      - frontend
 
 jobs:
   build_and_push:
     runs-on: ubuntu-latest
 
     steps:      
-      # 1. DockerHub 로그인
       - name: Login to DockerHub
         uses: docker/login-action@v1
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 2. Checkout 코드
       - name: Checkout repository
         uses: actions/checkout@v3     
  
-      # 3. Frontend Docker 이미지 빌드 및 푸시
-      - name: Build Frontend Docker image
+      - name: Frontend Dockerfile build
         run: |
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/frontend .
-
       - name: Push Frontend Docker image
         run: |
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/frontend
 
+        
   deploy:
     needs: build_and_push
     runs-on: ubuntu-latest
-
     steps:          
-      # 4. Docker pull and run
       - name: Docker pull and run
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.EC2_HOST_IP }}
           username: ubuntu
+          host: ${{ secrets.EC2_HOST_IP }}
           key: ${{ secrets.SSH_KEY }}    
           script: |          
             if [ "$(sudo docker ps -a -q -f name=dockerfrontend)" ]; then
